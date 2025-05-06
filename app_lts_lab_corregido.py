@@ -84,9 +84,7 @@ if opcion == "Gasolina Estabilizada":
             pdf.add_results(resultados)
             pdf.add_observaciones(obs)
             path = f"informes/gasolina/Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-            pdf.output(path)
-            with open(path, "rb") as f:
-                st.download_button("⬇️ Descargar informe", f, file_name=path.split("/")[-1], mime="application/pdf")
+            
 
 # MEG
 elif opcion == "MEG":
@@ -116,9 +114,18 @@ elif opcion == "MEG":
             pdf.add_results(resultados)
             pdf.add_observaciones(obs)
             path = f"informes/meg/Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-            pdf.output(path)
-            with open(path, "rb") as f:
-                st.download_button("⬇️ Descargar informe", f, file_name=path.split("/")[-1], mime="application/pdf")
+            from io import BytesIO
+
+pdf_bytes = pdf.output(dest="S").encode("latin1")
+buffer = BytesIO(pdf_bytes)
+
+st.download_button(
+    label="⬇️ Descargar informe",
+    data=buffer,
+    file_name=f"Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+    mime="application/pdf"
+)
+
 
 # TEG
 elif opcion == "TEG":
@@ -148,9 +155,18 @@ elif opcion == "TEG":
             pdf.add_results(resultados)
             pdf.add_observaciones(obs)
             path = f"informes/teg/Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-            pdf.output(path)
-            with open(path, "rb") as f:
-                st.download_button("⬇️ Descargar informe", f, file_name=path.split("/")[-1], mime="application/pdf")
+           from io import BytesIO
+
+pdf_bytes = pdf.output(dest="S").encode("latin1")
+buffer = BytesIO(pdf_bytes)
+
+st.download_button(
+    label="⬇️ Descargar informe",
+    data=buffer,
+    file_name=f"Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+    mime="application/pdf"
+)
+
 
 # Agua desmineralizada
 elif opcion == "Agua Desmineralizada":
@@ -174,9 +190,18 @@ elif opcion == "Agua Desmineralizada":
             pdf.add_results(resultados)
             pdf.add_observaciones(obs)
             path = f"informes/agua_demi/Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-            pdf.output(path)
-            with open(path, "rb") as f:
-                st.download_button("⬇️ Descargar informe", f, file_name=path.split("/")[-1], mime="application/pdf")
+            from io import BytesIO
+
+pdf_bytes = pdf.output(dest="S").encode("latin1")
+buffer = BytesIO(pdf_bytes)
+
+st.download_button(
+    label="⬇️ Descargar informe",
+    data=buffer,
+    file_name=f"Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+    mime="application/pdf"
+)
+
 
 import io
 
