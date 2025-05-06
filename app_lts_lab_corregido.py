@@ -189,18 +189,14 @@ if not os.path.exists(manual_path):
     pdf.cell(0, 10, "MANUAL DE USUARIO – LTS LAB ANALYZER", 0, 1, 'C')
     pdf.ln(10)
     pdf.set_font("Arial", '', 10)
-    texto = (
-        "Este sistema permite registrar, validar y documentar análisis de laboratorio
-"
-        "para plantas LTS con estándares de la industria petrolera.
+   texto = (
+    "Este sistema permite registrar, validar y documentar análisis de laboratorio\n"
+    "para plantas LTS con estándares de la industria petrolera.\n\n"
+    "- Seleccioná el análisis deseado.\n"
+    "- Ingresá los datos requeridos.\n"
+    "- Descargá el informe profesional en PDF."
+)
 
-"
-        "- Seleccioná el análisis deseado.
-"
-        "- Ingresá los datos requeridos.
-"
-        "- Descargá el informe profesional en PDF."
-    )
     pdf.multi_cell(0, 8, texto)
     pdf.output(manual_path)
 
