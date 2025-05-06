@@ -180,6 +180,8 @@ elif opcion == "Agua Desmineralizada":
 
 import io
 
+import io
+
 # Manual de usuario
 st.markdown("---")
 st.subheader("📘 Manual de Usuario")
@@ -209,9 +211,8 @@ if st.button("📄 Generar Manual de Usuario"):
 
     pdf.multi_cell(0, 8, texto)
 
-    buffer = io.BytesIO()
-    pdf.output(buffer)
-    buffer.seek(0)
+    pdf_bytes = pdf.output(dest='S').encode('latin1')  # Se genera como string, luego se codifica
+    buffer = io.BytesIO(pdf_bytes)
 
     st.download_button(
         label="⬇️ Descargar Manual de Usuario (PDF)",
