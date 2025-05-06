@@ -181,7 +181,9 @@ elif opcion == "Agua Desmineralizada":
 # Manual de usuario
 st.markdown("---")
 st.subheader("📘 Manual de Usuario")
+
 manual_path = "manual_lts_lab.pdf"
+
 if not os.path.exists(manual_path):
     pdf = PDF()
     pdf.add_page()
@@ -189,14 +191,20 @@ if not os.path.exists(manual_path):
     pdf.cell(0, 10, "MANUAL DE USUARIO – LTS LAB ANALYZER", 0, 1, 'C')
     pdf.ln(10)
     pdf.set_font("Arial", '', 10)
-   texto = (
-    "Este sistema permite registrar, validar y documentar análisis de laboratorio\n"
-    "para plantas LTS con estándares de la industria petrolera.\n\n"
-    "- Seleccioná el análisis deseado.\n"
-    "- Ingresá los datos requeridos.\n"
-    "- Descargá el informe profesional en PDF."
-)
-
+    texto = (
+        "Este sistema permite registrar, validar y documentar análisis de laboratorio\n"
+        "para plantas LTS con estándares de la industria petrolera.\n\n"
+        "🔹 Cómo usar la app:\n"
+        "- Seleccioná el tipo de análisis.\n"
+        "- Ingresá los datos requeridos.\n"
+        "- Descargá el informe en PDF profesional.\n\n"
+        "🔹 Módulos incluidos:\n"
+        "- Gas Natural (cromatografía CSV)\n"
+        "- Gasolina Estabilizada\n"
+        "- MEG / TEG\n"
+        "- Agua Desmineralizada\n\n"
+        "Cada informe incluye operador, observaciones, validación automática y logo oficial."
+    )
     pdf.multi_cell(0, 8, texto)
     pdf.output(manual_path)
 
