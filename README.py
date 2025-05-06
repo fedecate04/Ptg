@@ -7,7 +7,11 @@ import os
 from io import BytesIO
 
 st.set_page_config(page_title="LTS Lab Analyzer", layout="wide")
-st.image("LOGO PETROGAS.PNG", width=180)
+try:
+    with open("LOGO PETROGAS.PNG", "rb") as f:
+        st.image(f, width=180)
+except FileNotFoundError:
+    st.warning("⚠️ No se encontró el logo 'LOGO PETROGAS.PNG'")
 st.title("🧪 Laboratorio de Planta LTS")
 
 st.markdown("""
