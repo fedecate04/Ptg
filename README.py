@@ -6,14 +6,17 @@ from datetime import datetime
 import os
 from io import BytesIO
 
+# Configuración inicial
 st.set_page_config(page_title="LTS Lab Analyzer", layout="wide")
-try:
-    with open("LOGO PETROGAS.PNG", "rb") as f:
-        st.image(f, width=180)
-except FileNotFoundError:
-    st.warning("⚠️ No se encontró el logo 'LOGO PETROGAS.PNG'")
-st.title("🧪 Laboratorio de Planta LTS")
+LOGO_PATH = "LOGO PETROGAS.PNG"
 
+# Mostrar logo (verifica que el archivo esté disponible localmente)
+if os.path.exists(LOGO_PATH):
+    st.image(LOGO_PATH, width=180)
+else:
+    st.warning("⚠️ No se encontró el logo 'LOGO PETROGAS.PNG' en el directorio.")
+
+st.title("🧪 Laboratorio de Planta LTS")
 st.markdown("""
 Sistema profesional de análisis y validación de laboratorio con informes PDF para plantas de tratamiento de gas natural.
 
@@ -24,6 +27,7 @@ Garantizar que los fluidos cumplan con las especificaciones evita corrosión, fa
 st.sidebar.header("⚙️ Opciones")
 activar_validaciones = st.sidebar.checkbox("Activar validación de rangos", value=True)
 
+# Parámetros por tipo de análisis
 PARAMETROS_CONFIG = {
     "MEG": [
         {"nombre": "pH", "unidad": "", "min": 6, "max": 8},
@@ -50,14 +54,15 @@ PARAMETROS_CONFIG = {
     ]
 }
 
-LOGO_PATH = "LOGO PETROGAS.PNG"
+# Crear carpetas de informes
 for carpeta in PARAMETROS_CONFIG:
     os.makedirs(f"informes/{carpeta.lower().replace(' ', '_')}", exist_ok=True)
 os.makedirs("informes/gas_natural", exist_ok=True)
 
 def limpiar_texto(texto):
-    return texto.replace("–", "-").replace("—", "-").replace("“", '"').replace("”", '"')
+    return str(texto).replace("–", "-").replace("—", "-").replace("“", '"').replace("”", '"')
 
+# Clase PDF personalizada
 class PDF(FPDF):
     def header(self):
         if os.path.exists(LOGO_PATH):
@@ -94,6 +99,7 @@ class PDF(FPDF):
         self.multi_cell(0, 8, f"Observaciones: {limpiar_texto(texto)}")
         self.ln(3)
 
+# Funciones de validación
 def validar_parametro(valor, minimo, maximo):
     if valor is None:
         return "—"
@@ -110,6 +116,7 @@ def mostrar_resultados_validacion(parametros):
         filas.append((nombre, label))
     return dict(filas)
 
+# Generador de PDF
 def generar_pdf(nombre_archivo, operador, explicacion, resultados, obs, carpeta):
     pdf = PDF()
     pdf.add_page()
@@ -123,9 +130,11 @@ def generar_pdf(nombre_archivo, operador, explicacion, resultados, obs, carpeta)
         f.write(pdf_bytes)
     st.download_button("⬇️ Descargar informe PDF", BytesIO(pdf_bytes), nombre_archivo, mime="application/pdf")
 
+# Formulario para análisis físico-químicos
 def formulario_analisis(nombre_modulo, parametros):
     st.subheader(f"🔬 Análisis de {nombre_modulo}")
-    st.image(LOGO_PATH, width=180)
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=180)
     valores = []
     for param in parametros:
         label = param["nombre"]
@@ -148,21 +157,17 @@ def formulario_analisis(nombre_modulo, parametros):
             carpeta=nombre_modulo.lower().replace(' ', '_')
         )
 
-if "analisis_actual" not in st.session_state:
-    st.session_state.analisis_actual = "-- Seleccionar --"
-
+# Menú principal
 analisis_nuevo = st.selectbox("Seleccioná el tipo de análisis:", ["-- Seleccionar --"] + list(PARAMETROS_CONFIG.keys()) + ["Gas Natural"], key="tipo_analisis")
 
-if analisis_nuevo != st.session_state.analisis_actual:
-    st.session_state.analisis_actual = analisis_nuevo
-    st.experimental_rerun()
-
-if analisis_nuevo in PARAMETROS_CONFIG:
+if analisis_nuevo == "-- Seleccionar --":
+    st.info("📌 Elegí un análisis en el menú desplegable para comenzar.")
+elif analisis_nuevo in PARAMETROS_CONFIG:
     formulario_analisis(analisis_nuevo, PARAMETROS_CONFIG[analisis_nuevo])
-
 elif analisis_nuevo == "Gas Natural":
     st.subheader("🛢️ Análisis de Gas Natural")
-    st.image(LOGO_PATH, width=180)
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=180)
     st.markdown("Cargá el archivo CSV generado por el cromatógrafo con la composición del gas natural.")
     archivo = st.file_uploader("📎 Subir archivo CSV", type="csv")
     operador = st.text_input("👤 Operador", key="operador_gas")
@@ -175,15 +180,6 @@ elif analisis_nuevo == "Gas Natural":
                 resultados = df.set_index(df.columns[0]).iloc[:, 0].to_dict()
             else:
                 resultados = {df.columns[0]: df.iloc[:, 0].values.tolist()}
-            resultados["Explicación"] = "Poder Calorífico calculado como suma ponderada de componentes (ver GPA 2145). Índice de Wobbe: W = HHV / √Densidad relativa."
-            generar_pdf(
-                nombre_archivo=f"Informe_Gas_{operador.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-                operador=operador,
-                explicacion="Análisis composicional del gas natural. Fórmulas según GPA 2145 e ISO 6976.",
-                resultados=resultados,
-                obs=obs,
-                carpeta="gas_natural"
-            )
-        except Exception as e:
-            st.error(f"Error al procesar el archivo: {e}")
+            resultados["Explicación"] = "Poder Calorífico calculado como suma ponderada de componentes (ver GPA 2145). Índice de Wobbe
+
 
