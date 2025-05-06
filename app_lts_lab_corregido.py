@@ -133,8 +133,6 @@ elif opcion == "MEG":
         st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
 
         generar_pdf(
-            nombre_archivo=f
-        generar_pdf(
             nombre_archivo=f"Informe_MEG_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
             operador=operador,
             explicacion="Análisis de monoetilenglicol (MEG) utilizado como inhibidor de hidratos en plantas de gas.",
