@@ -139,3 +139,76 @@ if opcion == "Gas Natural":
                     )
         except Exception as e:
             st.error(f"❌ Error al leer el archivo: {e}")
+
+# SUBPÁGINA: Gasolina Estabilizada
+elif opcion == "Gasolina Estabilizada":
+    st.subheader("⛽ Análisis de Gasolina Estabilizada")
+    st.markdown("Ingresá los valores medidos para validar si cumplen con la especificación.")
+
+    # Entrada de datos
+    tvr = st.number_input("🔸 TVR (psi a 38,7 °C)", min_value=0.0, step=0.01)
+    sales = st.number_input("🔸 Contenido de Sales (g/m²)", min_value=0.0, step=0.01)
+    densidad = st.number_input("🔸 Densidad (kg/m³)", min_value=0.0, step=0.01)
+    operador = st.text_input("👤 Ingresá tu nombre o el del operador")
+
+    # Validaciones
+    cumple_tvr = "Cumple ✅" if tvr < 12 else "No cumple ❌"
+    cumple_sales = "Revisar manualmente"  # No tenemos especificación exacta aún
+    cumple_densidad = "Revisar manualmente"
+
+    # Mostrar resultados
+    if st.button("📊 Analizar resultados"):
+        resultados = {
+            "TVR (psi a 38,7 °C)": tvr,
+            "Especificación TVR": "< 12 psi",
+            "Validación TVR": cumple_tvr,
+            "Contenido de Sales (g/m²)": sales,
+            "Validación Sales": cumple_sales,
+            "Densidad (kg/m³)": densidad,
+            "Validación Densidad": cumple_densidad
+        }
+
+        st.success("✅ Resultados del análisis")
+        st.dataframe(pd.DataFrame.from_dict(resultados, orient='index', columns=['Valor']))
+
+        # PDF
+        if st.button("📄 Descargar informe PDF"):
+            class PDF(FPDF):
+                def header(self):
+                    self.set_font('Arial', 'B', 12)
+                    self.cell(0, 10, 'Informe de Análisis de Gasolina Estabilizada', 0, 1, 'C')
+                    self.ln(5)
+
+                def add_explanation(self):
+                    self.set_font('Arial', '', 10)
+                    self.multi_cell(0, 8, "Este informe incluye los parámetros más relevantes para la validación de la gasolina estabilizada:\n"
+                                          "- TVR: Tensión de vapor Reid (TVR), mide la volatilidad de la gasolina.\n"
+                                          "- Sales: indican la presencia de contaminantes iónicos.\n"
+                                          "- Densidad: relacionada con el poder energético y características de transporte.")
+                    self.ln(4)
+
+                def add_sample(self, operador, resultados):
+                    self.set_font('Arial', '', 10)
+                    self.cell(0, 10, f"Operador: {operador}", 0, 1)
+                    for k, v in resultados.items():
+                        self.cell(0, 8, f"{k}: {v}", 0, 1)
+                    self.ln(3)
+
+            pdf = PDF()
+            pdf.add_page()
+            pdf.add_explanation()
+            pdf.add_sample(operador, resultados)
+
+            os.makedirs("informes/gasolina", exist_ok=True)
+            nombre_pdf = f"Informe_Gasolina_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+            ruta_pdf = f"informes/gasolina/{nombre_pdf}"
+            pdf.output(ruta_pdf)
+
+            with open(ruta_pdf, "rb") as file:
+                st.download_button(
+                    label="⬇️ Descargar informe",
+                    data=file,
+                    file_name=nombre_pdf,
+                    mime="application/pdf"
+                )
+
