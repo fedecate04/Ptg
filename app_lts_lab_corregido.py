@@ -178,19 +178,20 @@ elif opcion == "Agua Desmineralizada":
             with open(path, "rb") as f:
                 st.download_button("⬇️ Descargar informe", f, file_name=path.split("/")[-1], mime="application/pdf")
 
+import io
+
 # Manual de usuario
 st.markdown("---")
 st.subheader("📘 Manual de Usuario")
 
-manual_path = "manual_lts_lab.pdf"
-
-if not os.path.exists(manual_path):
+if st.button("📄 Generar Manual de Usuario"):
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "MANUAL DE USUARIO – LTS LAB ANALYZER", 0, 1, 'C')
+    pdf.cell(0, 10, "MANUAL DE USUARIO - LTS LAB ANALYZER", 0, 1, 'C')
     pdf.ln(10)
     pdf.set_font("Arial", '', 10)
+
     texto = (
         "Este sistema permite registrar, validar y documentar analisis de laboratorio\n"
         "para plantas LTS con estandares de la industria petrolera.\n\n"
@@ -205,17 +206,17 @@ if not os.path.exists(manual_path):
         "- Agua Desmineralizada\n\n"
         "Cada informe incluye operador, observaciones, validacion automatica y logo oficial."
     )
-    pdf.multi_cell(0, 8, texto)
-    pdf.output(manual_path)
 
-# Mostrar botón de descarga del manual
-if os.path.exists(manual_path):
-    with open(manual_path, "rb") as file:
-        st.download_button(
-            label="⬇️ Descargar Manual de Usuario (PDF)",
-            data=file,
-            file_name="Manual_LTS_Lab_Analyzer.pdf",
-            mime="application/pdf"
-        )
-else:
-    st.warning("⚠️ El manual no pudo ser generado.")
+    pdf.multi_cell(0, 8, texto)
+
+    buffer = io.BytesIO()
+    pdf.output(buffer)
+    buffer.seek(0)
+
+    st.download_button(
+        label="⬇️ Descargar Manual de Usuario (PDF)",
+        data=buffer,
+        file_name="Manual_LTS_Lab_Analyzer.pdf",
+        mime="application/pdf"
+    )
+
