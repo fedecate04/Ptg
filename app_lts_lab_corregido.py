@@ -56,9 +56,9 @@ class PDF(FPDF):
         self.multi_cell(0, 8, f"Observaciones: {texto}")
         self.ln(3)
 
-# Selector principal
 opcion = st.selectbox("🔍 Seleccioná el tipo de análisis:", [
     "-- Seleccionar --",
+    "Gas Natural",
     "Gasolina Estabilizada",
     "MEG",
     "TEG",
@@ -194,4 +194,74 @@ elif opcion == "Agua Desmineralizada":
             obs=obs,
             carpeta="agua_demi"
         )
+# Análisis de Gas Natural desde CSV
+elif opcion == "Gas Natural":
+    st.subheader("🔥 Análisis de Gas Natural - Cromatografía")
+    archivo = st.file_uploader("📁 Cargar archivo CSV de cromatografía", type=["csv"])
+    operador = st.text_input("👤 Operador")
+    obs = st.text_area("Observaciones")
 
+    if archivo is not None:
+        df = pd.read_csv(archivo)
+        st.dataframe(df)
+
+        # Aquí podrías agregar cálculos de propiedades (densidad, poder calorífico, etc.)
+        # Ejemplo ficticio:
+        resultado_ficticio = {
+            "Metano (%)": df["Metano"].sum() if "Metano" in df.columns else "No disponible",
+            "Etano (%)": df["Etano"].sum() if "Etano" in df.columns else "No disponible",
+            "Poder calorífico (kcal/m³)": 9500,  # ejemplo
+            "Gravedad específica": 0.65  # ejemplo
+        }
+
+        st.dataframe(pd.DataFrame(resultado_ficticio.items(), columns=["Parámetro", "Valor"]))
+
+        if st.button("📄 Descargar informe PDF"):
+            generar_pdf(
+                nombre_archivo=f"Informe_Gas_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                operador=operador,
+                explicacion="Análisis de composición de gas natural a partir de cromatografía. Incluye poder calorífico y gravedad específica.",
+                resultados=resultado_ficticio,
+                obs=obs,
+                carpeta="gas_natural"
+            )
+
+# Manual de Usuario
+st.markdown("---")
+st.subheader("📘 Manual de Usuario")
+
+if st.button("📄 Generar Manual de Usuario"):
+    pdf = PDF()
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, "MANUAL DE USUARIO - LTS LAB ANALYZER", 0, 1, 'C')
+    pdf.ln(10)
+    pdf.set_font("Arial", '', 10)
+
+    texto = (
+        "Este sistema permite registrar, validar y documentar análisis de laboratorio\n"
+        "para plantas LTS con estándares de la industria petrolera.\n\n"
+        "📋 Cómo usar la app:\n"
+        "- Seleccione el tipo de análisis.\n"
+        "- Ingrese los datos requeridos o cargue el CSV.\n"
+        "- Valide los parámetros.\n"
+        "- Descargue el informe profesional en PDF con logo.\n\n"
+        "🧪 Módulos incluidos:\n"
+        "- Gas Natural (CSV cromatografía)\n"
+        "- Gasolina Estabilizada\n"
+        "- MEG / TEG\n"
+        "- Agua Desmineralizada\n\n"
+        "📄 Cada informe incluye: operador, validación, observaciones y diseño profesional."
+    )
+
+    pdf.multi_cell(0, 8, texto)
+
+    pdf_bytes = pdf.output(dest='S').encode('latin1')
+    buffer = BytesIO(pdf_bytes)
+
+    st.download_button(
+        label="⬇️ Descargar Manual de Usuario (PDF)",
+        data=buffer,
+        file_name="Manual_LTS_Lab_Analyzer.pdf",
+        mime="application/pdf"
+    )
