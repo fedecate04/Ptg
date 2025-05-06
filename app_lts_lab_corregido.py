@@ -191,27 +191,31 @@ if not os.path.exists(manual_path):
     pdf.cell(0, 10, "MANUAL DE USUARIO – LTS LAB ANALYZER", 0, 1, 'C')
     pdf.ln(10)
     pdf.set_font("Arial", '', 10)
-   texto = (
-    "Este sistema permite registrar, validar y documentar analisis de laboratorio\n"
-    "para plantas LTS con estandares de la industria petrolera.\n\n"
-    "Como usar la app:\n"
-    "- Seleccione el tipo de analisis.\n"
-    "- Ingrese los datos requeridos.\n"
-    "- Descargue el informe en PDF profesional.\n\n"
-    "Modulos incluidos:\n"
-    "- Gas Natural (cromatografia CSV)\n"
-    "- Gasolina Estabilizada\n"
-    "- MEG / TEG\n"
-    "- Agua Desmineralizada\n\n"
-    "Cada informe incluye operador, observaciones, validacion automatica y logo oficial."
-)
+    texto = (
+        "Este sistema permite registrar, validar y documentar analisis de laboratorio\n"
+        "para plantas LTS con estandares de la industria petrolera.\n\n"
+        "Como usar la app:\n"
+        "- Seleccione el tipo de analisis.\n"
+        "- Ingrese los datos requeridos.\n"
+        "- Descargue el informe en PDF profesional.\n\n"
+        "Modulos incluidos:\n"
+        "- Gas Natural (cromatografia CSV)\n"
+        "- Gasolina Estabilizada\n"
+        "- MEG / TEG\n"
+        "- Agua Desmineralizada\n\n"
+        "Cada informe incluye operador, observaciones, validacion automatica y logo oficial."
+    )
     pdf.multi_cell(0, 8, texto)
     pdf.output(manual_path)
 
-with open(manual_path, "rb") as file:
-    st.download_button(
-        label="⬇️ Descargar Manual de Usuario (PDF)",
-        data=file,
-        file_name="Manual_LTS_Lab_Analyzer.pdf",
-        mime="application/pdf"
-    )
+# Mostrar botón de descarga del manual
+if os.path.exists(manual_path):
+    with open(manual_path, "rb") as file:
+        st.download_button(
+            label="⬇️ Descargar Manual de Usuario (PDF)",
+            data=file,
+            file_name="Manual_LTS_Lab_Analyzer.pdf",
+            mime="application/pdf"
+        )
+else:
+    st.warning("⚠️ El manual no pudo ser generado.")
