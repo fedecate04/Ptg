@@ -183,3 +183,4 @@ elif analisis_nuevo == "Gas Natural":
         except Exception as e:
             st.error(f"Error al procesar el archivo: {e}")
 
+     
