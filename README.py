@@ -7,6 +7,7 @@ import os
 from io import BytesIO
 
 st.set_page_config(page_title="LTS Lab Analyzer", layout="wide")
+st.image("LOGO PETROGAS.PNG", width=180)
 st.title("🧪 Laboratorio de Planta LTS")
 
 st.markdown("""
@@ -19,7 +20,6 @@ Garantizar que los fluidos cumplan con las especificaciones evita corrosión, fa
 st.sidebar.header("⚙️ Opciones")
 activar_validaciones = st.sidebar.checkbox("Activar validación de rangos", value=True)
 
-# BLOQUE CENTRALIZADO DE PARÁMETROS Y VALIDACIONES
 PARAMETROS_CONFIG = {
     "MEG": [
         {"nombre": "pH", "unidad": "", "min": 6, "max": 8},
@@ -46,7 +46,7 @@ PARAMETROS_CONFIG = {
     ]
 }
 
-LOGO_PATH = "LOGO PETROGAS.png"
+LOGO_PATH = "LOGO PETROGAS.PNG"
 for carpeta in PARAMETROS_CONFIG:
     os.makedirs(f"informes/{carpeta.lower().replace(' ', '_')}", exist_ok=True)
 os.makedirs("informes/gas_natural", exist_ok=True)
@@ -100,7 +100,7 @@ def mostrar_resultados_validacion(parametros):
     for nombre, val, unidad, minimo, maximo in parametros:
         if activar_validaciones:
             estado = validar_parametro(val, minimo, maximo)
-            label = f"{val} {unidad} (Rango: {minimo}-{maximo}) → {estado}"
+            label = f"Parámetro: {nombre}\nValor: {val} {unidad}\nRango esperado: {minimo} - {maximo} {unidad}\nResultado: {estado}"
         else:
             label = f"{val} {unidad}"
         filas.append((nombre, label))
@@ -121,6 +121,7 @@ def generar_pdf(nombre_archivo, operador, explicacion, resultados, obs, carpeta)
 
 def formulario_analisis(nombre_modulo, parametros):
     st.subheader(f"🔬 Análisis de {nombre_modulo}")
+    st.image(LOGO_PATH, width=180)
     valores = []
     for param in parametros:
         label = param["nombre"]
@@ -157,6 +158,7 @@ if analisis_nuevo in PARAMETROS_CONFIG:
 
 elif analisis_nuevo == "Gas Natural":
     st.subheader("🛢️ Análisis de Gas Natural")
+    st.image(LOGO_PATH, width=180)
     st.markdown("Cargá el archivo CSV generado por el cromatógrafo con la composición del gas natural.")
     archivo = st.file_uploader("📎 Subir archivo CSV", type="csv")
     operador = st.text_input("👤 Operador", key="operador_gas")
@@ -169,10 +171,11 @@ elif analisis_nuevo == "Gas Natural":
                 resultados = df.set_index(df.columns[0]).iloc[:, 0].to_dict()
             else:
                 resultados = {df.columns[0]: df.iloc[:, 0].values.tolist()}
+            resultados["Explicación"] = "Poder Calorífico calculado como suma ponderada de componentes (ver GPA 2145). Índice de Wobbe: W = HHV / √Densidad relativa."
             generar_pdf(
                 nombre_archivo=f"Informe_Gas_{operador.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
                 operador=operador,
-                explicacion="Análisis composicional del gas natural por cromatografía de gases.",
+                explicacion="Análisis composicional del gas natural. Fórmulas según GPA 2145 e ISO 6976.",
                 resultados=resultados,
                 obs=obs,
                 carpeta="gas_natural"
