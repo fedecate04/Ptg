@@ -1,4 +1,3 @@
-# app.py — LTS Lab Analyzer (versión corregida)
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,19 +6,23 @@ from datetime import datetime
 import os
 from io import BytesIO
 
-# Configuración
+# Configuración inicial
 st.set_page_config(page_title="LTS Lab Analyzer", layout="wide")
 st.title("🧪 Laboratorio de Planta LTS")
 st.markdown("Sistema profesional de análisis y validación de laboratorio con informes PDF para plantas de tratamiento de gas natural.")
 
-# Crear carpetas necesarias
+# Crear carpetas de informes
 modulos = ["gas_natural", "gasolina", "meg", "teg", "agua_demi"]
 for m in modulos:
     os.makedirs(f"informes/{m}", exist_ok=True)
 
 LOGO_PATH = "LOGO PETROBRAS.PNG"
 
-# Clase PDF
+# Función para limpiar caracteres no compatibles con latin1
+def limpiar_texto(texto):
+    return texto.replace("–", "-").replace("—", "-").replace("“", '"').replace("”", '"')
+
+# Clase PDF personalizada
 class PDF(FPDF):
     def header(self):
         if os.path.exists(LOGO_PATH):
@@ -37,35 +40,28 @@ class PDF(FPDF):
 
     def add_operator(self, operador):
         self.set_font('Arial', '', 10)
-        self.cell(0, 10, f"Operador: {operador}", 0, 1)
+        self.cell(0, 10, f"Operador: {limpiar_texto(operador)}", 0, 1)
         self.ln(2)
 
     def add_explanation(self, texto):
         self.set_font('Arial', 'I', 9)
-        self.multi_cell(0, 6, texto)
+        self.multi_cell(0, 6, limpiar_texto(texto))
         self.ln(3)
 
     def add_results(self, resultados):
         self.set_font('Arial', '', 10)
         for k, v in resultados.items():
-            self.cell(0, 8, f"{k}: {v}", 0, 1)
+            k_clean = limpiar_texto(str(k))
+            v_clean = limpiar_texto(str(v))
+            self.cell(0, 8, f"{k_clean}: {v_clean}", 0, 1)
         self.ln(4)
 
     def add_observaciones(self, texto="Sin observaciones."):
         self.set_font('Arial', '', 10)
-        self.multi_cell(0, 8, f"Observaciones: {texto}")
+        self.multi_cell(0, 8, f"Observaciones: {limpiar_texto(texto)}")
         self.ln(3)
 
-opcion = st.selectbox("🔍 Seleccioná el tipo de análisis:", [
-    "-- Seleccionar --",
-    "Gas Natural",
-    "Gasolina Estabilizada",
-    "MEG",
-    "TEG",
-    "Agua Desmineralizada"
-])
-
-# Función para generar y descargar PDF
+# Función para generar PDF
 def generar_pdf(nombre_archivo, operador, explicacion, resultados, obs, carpeta):
     pdf = PDF()
     pdf.add_page()
@@ -74,7 +70,7 @@ def generar_pdf(nombre_archivo, operador, explicacion, resultados, obs, carpeta)
     pdf.add_results(resultados)
     pdf.add_observaciones(obs)
 
-    pdf_bytes = pdf.output(dest="S").encode("latin1")
+    pdf_bytes = pdf.output(dest="S").encode("latin1", errors="ignore")
     buffer = BytesIO(pdf_bytes)
 
     st.download_button(
@@ -84,7 +80,17 @@ def generar_pdf(nombre_archivo, operador, explicacion, resultados, obs, carpeta)
         mime="application/pdf"
     )
 
-# Gasolina
+# Selector de análisis
+opcion = st.selectbox("🔍 Seleccioná el tipo de análisis:", [
+    "-- Seleccionar --",
+    "Gas Natural",
+    "Gasolina Estabilizada",
+    "MEG",
+    "TEG",
+    "Agua Desmineralizada"
+])
+
+# Módulo Gasolina Estabilizada
 if opcion == "Gasolina Estabilizada":
     st.subheader("⛽ Análisis de Gasolina Estabilizada")
     tvr = st.number_input("TVR (psi a 38,7 °C)", min_value=0.0, step=0.01)
@@ -111,7 +117,7 @@ if opcion == "Gasolina Estabilizada":
             carpeta="gasolina"
         )
 
-# MEG
+# Módulo MEG
 elif opcion == "MEG":
     st.subheader("🧪 Análisis de MEG")
     ph = st.number_input("pH", 0.0, 14.0, step=0.01)
@@ -141,7 +147,7 @@ elif opcion == "MEG":
             carpeta="meg"
         )
 
-# TEG
+# Módulo TEG
 elif opcion == "TEG":
     st.subheader("🧪 Análisis de TEG")
     ph = st.number_input("pH", 0.0, 14.0, step=0.01)
@@ -171,7 +177,7 @@ elif opcion == "TEG":
             carpeta="teg"
         )
 
-# Agua Desmineralizada
+# Módulo Agua Desmineralizada
 elif opcion == "Agua Desmineralizada":
     st.subheader("💧 Análisis de Agua Desmineralizada")
     ph = st.number_input("pH", 0.0, 14.0, step=0.01)
@@ -194,7 +200,8 @@ elif opcion == "Agua Desmineralizada":
             obs=obs,
             carpeta="agua_demi"
         )
-# Análisis de Gas Natural desde CSV
+
+# Módulo Gas Natural
 elif opcion == "Gas Natural":
     st.subheader("🔥 Análisis de Gas Natural - Cromatografía")
     archivo = st.file_uploader("📁 Cargar archivo CSV de cromatografía", type=["csv"])
@@ -202,66 +209,4 @@ elif opcion == "Gas Natural":
     obs = st.text_area("Observaciones")
 
     if archivo is not None:
-        df = pd.read_csv(archivo)
-        st.dataframe(df)
-
-        # Aquí podrías agregar cálculos de propiedades (densidad, poder calorífico, etc.)
-        # Ejemplo ficticio:
-        resultado_ficticio = {
-            "Metano (%)": df["Metano"].sum() if "Metano" in df.columns else "No disponible",
-            "Etano (%)": df["Etano"].sum() if "Etano" in df.columns else "No disponible",
-            "Poder calorífico (kcal/m³)": 9500,  # ejemplo
-            "Gravedad específica": 0.65  # ejemplo
-        }
-
-        st.dataframe(pd.DataFrame(resultado_ficticio.items(), columns=["Parámetro", "Valor"]))
-
-        if st.button("📄 Descargar informe PDF"):
-            generar_pdf(
-                nombre_archivo=f"Informe_Gas_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-                operador=operador,
-                explicacion="Análisis de composición de gas natural a partir de cromatografía. Incluye poder calorífico y gravedad específica.",
-                resultados=resultado_ficticio,
-                obs=obs,
-                carpeta="gas_natural"
-            )
-
-# Manual de Usuario
-st.markdown("---")
-st.subheader("📘 Manual de Usuario")
-
-if st.button("📄 Generar Manual de Usuario"):
-    pdf = PDF()
-    pdf.add_page()
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "MANUAL DE USUARIO - LTS LAB ANALYZER", 0, 1, 'C')
-    pdf.ln(10)
-    pdf.set_font("Arial", '', 10)
-
-    texto = (
-        "Este sistema permite registrar, validar y documentar análisis de laboratorio\n"
-        "para plantas LTS con estándares de la industria petrolera.\n\n"
-        "📋 Cómo usar la app:\n"
-        "- Seleccione el tipo de análisis.\n"
-        "- Ingrese los datos requeridos o cargue el CSV.\n"
-        "- Valide los parámetros.\n"
-        "- Descargue el informe profesional en PDF con logo.\n\n"
-        "🧪 Módulos incluidos:\n"
-        "- Gas Natural (CSV cromatografía)\n"
-        "- Gasolina Estabilizada\n"
-        "- MEG / TEG\n"
-        "- Agua Desmineralizada\n\n"
-        "📄 Cada informe incluye: operador, validación, observaciones y diseño profesional."
-    )
-
-    pdf.multi_cell(0, 8, texto)
-
-    pdf_bytes = pdf.output(dest='S').encode('latin1')
-    buffer = BytesIO(pdf_bytes)
-
-    st.download_button(
-        label="⬇️ Descargar Manual de Usuario (PDF)",
-        data=buffer,
-        file_name="Manual_LTS_Lab_Analyzer.pdf",
-        mime="application/pdf"
-    )
+        df = pd.read
