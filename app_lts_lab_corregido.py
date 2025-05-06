@@ -5,6 +5,7 @@ import numpy as np
 from fpdf import FPDF
 from datetime import datetime
 import os
+from io import BytesIO
 
 # Configuración
 st.set_page_config(page_title="LTS Lab Analyzer", layout="wide")
@@ -28,23 +29,28 @@ class PDF(FPDF):
         self.set_font('Arial', '', 10)
         self.cell(0, 10, f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M')}", 0, 1, 'R')
         self.ln(5)
+
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
         self.cell(0, 10, 'Confidencial - Uso interno Petrobras LTS', 0, 0, 'C')
+
     def add_operator(self, operador):
         self.set_font('Arial', '', 10)
         self.cell(0, 10, f"Operador: {operador}", 0, 1)
         self.ln(2)
+
     def add_explanation(self, texto):
         self.set_font('Arial', 'I', 9)
         self.multi_cell(0, 6, texto)
         self.ln(3)
+
     def add_results(self, resultados):
         self.set_font('Arial', '', 10)
         for k, v in resultados.items():
             self.cell(0, 8, f"{k}: {v}", 0, 1)
         self.ln(4)
+
     def add_observaciones(self, texto="Sin observaciones."):
         self.set_font('Arial', '', 10)
         self.multi_cell(0, 8, f"Observaciones: {texto}")
@@ -58,6 +64,25 @@ opcion = st.selectbox("🔍 Seleccioná el tipo de análisis:", [
     "TEG",
     "Agua Desmineralizada"
 ])
+
+# Función para generar y descargar PDF
+def generar_pdf(nombre_archivo, operador, explicacion, resultados, obs, carpeta):
+    pdf = PDF()
+    pdf.add_page()
+    pdf.add_operator(operador)
+    pdf.add_explanation(explicacion)
+    pdf.add_results(resultados)
+    pdf.add_observaciones(obs)
+
+    pdf_bytes = pdf.output(dest="S").encode("latin1")
+    buffer = BytesIO(pdf_bytes)
+
+    st.download_button(
+        label="⬇️ Descargar informe PDF",
+        data=buffer,
+        file_name=nombre_archivo,
+        mime="application/pdf"
+    )
 
 # Gasolina
 if opcion == "Gasolina Estabilizada":
@@ -76,15 +101,15 @@ if opcion == "Gasolina Estabilizada":
             "Densidad (kg/m³)": densidad
         }
         st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
-        if st.button("📄 Descargar informe PDF"):
-            pdf = PDF()
-            pdf.add_page()
-            pdf.add_operator(operador)
-            pdf.add_explanation("Evaluación de gasolina estabilizada: TVR, contenido de sales y densidad.")
-            pdf.add_results(resultados)
-            pdf.add_observaciones(obs)
-            path = f"informes/gasolina/Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-            
+
+        generar_pdf(
+            nombre_archivo=f"Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            operador=operador,
+            explicacion="Evaluación de gasolina estabilizada: TVR, contenido de sales y densidad.",
+            resultados=resultados,
+            obs=obs,
+            carpeta="gasolina"
+        )
 
 # MEG
 elif opcion == "MEG":
@@ -106,26 +131,17 @@ elif opcion == "MEG":
             "MDEA (ppm)": mdea
         }
         st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
-        if st.button("📄 Descargar informe PDF"):
-            pdf = PDF()
-            pdf.add_page()
-            pdf.add_operator(operador)
-            pdf.add_explanation("Análisis de monoetilenglicol utilizado como inhibidor de hidratos.")
-            pdf.add_results(resultados)
-            pdf.add_observaciones(obs)
-            path = f"informes/meg/Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-            from io import BytesIO
 
-pdf_bytes = pdf.output(dest="S").encode("latin1")
-buffer = BytesIO(pdf_bytes)
-
-st.download_button(
-    label="⬇️ Descargar informe",
-    data=buffer,
-    file_name=f"Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-    mime="application/pdf"
-)
-
+        generar_pdf(
+            nombre_archivo=f
+        generar_pdf(
+            nombre_archivo=f"Informe_MEG_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            operador=operador,
+            explicacion="Análisis de monoetilenglicol (MEG) utilizado como inhibidor de hidratos en plantas de gas.",
+            resultados=resultados,
+            obs=obs,
+            carpeta="meg"
+        )
 
 # TEG
 elif opcion == "TEG":
@@ -147,28 +163,17 @@ elif opcion == "TEG":
             "Hierro (ppm)": hierro
         }
         st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
-        if st.button("📄 Descargar informe PDF"):
-            pdf = PDF()
-            pdf.add_page()
-            pdf.add_operator(operador)
-            pdf.add_explanation("Análisis de trietilenglicol para deshidratación de gas natural.")
-            pdf.add_results(resultados)
-            pdf.add_observaciones(obs)
-            path = f"informes/teg/Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-           from io import BytesIO
 
-pdf_bytes = pdf.output(dest="S").encode("latin1")
-buffer = BytesIO(pdf_bytes)
+        generar_pdf(
+            nombre_archivo=f"Informe_TEG_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            operador=operador,
+            explicacion="Análisis de trietilenglicol (TEG) utilizado para deshidratación de gas natural.",
+            resultados=resultados,
+            obs=obs,
+            carpeta="teg"
+        )
 
-st.download_button(
-    label="⬇️ Descargar informe",
-    data=buffer,
-    file_name=f"Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-    mime="application/pdf"
-)
-
-
-# Agua desmineralizada
+# Agua Desmineralizada
 elif opcion == "Agua Desmineralizada":
     st.subheader("💧 Análisis de Agua Desmineralizada")
     ph = st.number_input("pH", 0.0, 14.0, step=0.01)
@@ -182,67 +187,13 @@ elif opcion == "Agua Desmineralizada":
             "Cloruros (mg/L)": cl
         }
         st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
-        if st.button("📄 Descargar informe PDF"):
-            pdf = PDF()
-            pdf.add_page()
-            pdf.add_operator(operador)
-            pdf.add_explanation("Análisis de agua desmineralizada para uso industrial y calderas.")
-            pdf.add_results(resultados)
-            pdf.add_observaciones(obs)
-            path = f"informes/agua_demi/Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-            from io import BytesIO
 
-pdf_bytes = pdf.output(dest="S").encode("latin1")
-buffer = BytesIO(pdf_bytes)
-
-st.download_button(
-    label="⬇️ Descargar informe",
-    data=buffer,
-    file_name=f"Informe_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-    mime="application/pdf"
-)
-
-
-import io
-
-import io
-
-# Manual de usuario
-st.markdown("---")
-st.subheader("📘 Manual de Usuario")
-
-if st.button("📄 Generar Manual de Usuario"):
-    pdf = PDF()
-    pdf.add_page()
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "MANUAL DE USUARIO - LTS LAB ANALYZER", 0, 1, 'C')
-    pdf.ln(10)
-    pdf.set_font("Arial", '', 10)
-
-    texto = (
-        "Este sistema permite registrar, validar y documentar analisis de laboratorio\n"
-        "para plantas LTS con estandares de la industria petrolera.\n\n"
-        "Como usar la app:\n"
-        "- Seleccione el tipo de analisis.\n"
-        "- Ingrese los datos requeridos.\n"
-        "- Descargue el informe en PDF profesional.\n\n"
-        "Modulos incluidos:\n"
-        "- Gas Natural (cromatografia CSV)\n"
-        "- Gasolina Estabilizada\n"
-        "- MEG / TEG\n"
-        "- Agua Desmineralizada\n\n"
-        "Cada informe incluye operador, observaciones, validacion automatica y logo oficial."
-    )
-
-    pdf.multi_cell(0, 8, texto)
-
-    pdf_bytes = pdf.output(dest='S').encode('latin1')  # Se genera como string, luego se codifica
-    buffer = io.BytesIO(pdf_bytes)
-
-    st.download_button(
-        label="⬇️ Descargar Manual de Usuario (PDF)",
-        data=buffer,
-        file_name="Manual_LTS_Lab_Analyzer.pdf",
-        mime="application/pdf"
-    )
+        generar_pdf(
+            nombre_archivo=f"Informe_AguaDemi_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            operador=operador,
+            explicacion="Análisis de agua desmineralizada para uso industrial, calderas o procesos sensibles.",
+            resultados=resultados,
+            obs=obs,
+            carpeta="agua_demi"
+        )
 
