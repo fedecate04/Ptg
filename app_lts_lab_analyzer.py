@@ -1,276 +1,121 @@
+# LTS LAB ANALYZER - VERSIÓN PROFESIONAL PEDAGÓGICA
+
 import streamlit as st
 import pandas as pd
-import numpy as np
 from fpdf import FPDF
 from datetime import datetime
-import os
 from io import BytesIO
+import os
 
-# Configuración inicial
+# CONFIGURACIÓN
 st.set_page_config(page_title="LTS Lab Analyzer", layout="wide")
-st.title("🧪 Laboratorio de Planta LTS")
-st.markdown("Sistema profesional de análisis y validación de laboratorio con informes PDF para plantas de tratamiento de gas natural.")
+LOGO_PATH = "logopetrogas.png"
 
-# Crear carpetas de informes
-modulos = ["gas_natural", "gasolina", "meg", "teg", "agua_demi"]
-for m in modulos:
-    os.makedirs(f"informes/{m}", exist_ok=True)
+# ESTILO OSCURO Y FORMATO
+st.markdown("""
+    <style>
+        .stApp { background-color: #1e1e1e; color: white; }
+        .stButton>button, .stDownloadButton>button {
+            background-color: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 8px;
+        }
+        input, textarea, .stTextInput, .stTextArea {
+            background-color: #2e2e2e !important;
+            color: white !important;
+        }
+        .stSelectbox div, .stNumberInput input {
+            background-color: #2e2e2e !important;
+            color: white !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-LOGO_PATH = "LOGO PETROGAS.png"
+# ENCABEZADO CON LOGO
+col1, col2 = st.columns([1, 5])
+with col1:
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=130)
+with col2:
+    st.title("🧪 LTS Lab Analyzer")
+    st.markdown("Aplicación profesional y pedagógica para análisis de laboratorio en plantas LTS.")
 
-# Función para limpiar caracteres no compatibles con latin1
-def limpiar_texto(texto):
-    return texto.replace("–", "-").replace("—", "-").replace("“", '"').replace("”", '"')
-
-# Clase PDF personalizada
+# FUNCIONES PDF
 class PDF(FPDF):
     def header(self):
         if os.path.exists(LOGO_PATH):
             self.image(LOGO_PATH, 10, 8, 33)
-        self.set_font('Arial', 'B', 12)
-        self.cell(0, 10, 'INFORME DE ANÁLISIS DE LABORATORIO', 0, 1, 'C')
-        self.set_font('Arial', '', 10)
-        self.cell(0, 10, f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M')}", 0, 1, 'R')
+        self.set_font("Arial", "B", 12)
+        self.cell(0, 10, "INFORME DE ANÁLISIS DE LABORATORIO", 0, 1, "C")
+        self.set_font("Arial", "", 10)
+        self.cell(0, 10, f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M')}", 0, 1, "R")
         self.ln(5)
 
     def footer(self):
         self.set_y(-15)
-        self.set_font('Arial', 'I', 8)
-        self.cell(0, 10, 'Confidencial - Uso interno Petrobras LTS', 0, 0, 'C')
+        self.set_font("Arial", "I", 8)
+        self.cell(0, 10, "Confidencial - Uso interno PETROGAS", 0, 0, "C")
 
-    def add_operator(self, operador):
-        self.set_font('Arial', '', 10)
-        self.cell(0, 10, f"Operador: {limpiar_texto(operador)}", 0, 1)
+    def add_section(self, title, content):
+        self.set_font("Arial", "B", 11)
+        self.cell(0, 10, title, 0, 1)
+        self.set_font("Arial", "", 10)
+        if isinstance(content, dict):
+            for k, v in content.items():
+                self.cell(0, 8, f"{k}: {v}", 0, 1)
+        else:
+            self.multi_cell(0, 8, str(content))
         self.ln(2)
 
-    def add_explanation(self, texto):
-        self.set_font('Arial', 'I', 9)
-        self.multi_cell(0, 6, limpiar_texto(texto))
-        self.ln(3)
-
-    def add_results(self, resultados):
-        self.set_font('Arial', '', 10)
-        for k, v in resultados.items():
-            self.cell(0, 8, f"{limpiar_texto(k)}: {limpiar_texto(str(v))}", 0, 1)
-        self.ln(4)
-
-    def add_observaciones(self, texto="Sin observaciones."):
-        self.set_font('Arial', '', 10)
-        self.multi_cell(0, 8, f"Observaciones: {limpiar_texto(texto)}")
-        self.ln(3)
-
-def generar_pdf(nombre_archivo, operador, explicacion, resultados, obs, carpeta):
+def exportar_pdf(nombre, operador, explicacion, resultados, observaciones):
     pdf = PDF()
     pdf.add_page()
-    pdf.add_operator(operador)
-    pdf.add_explanation(explicacion)
-    pdf.add_results(resultados)
-    pdf.add_observaciones(obs)
+    pdf.add_section("Operador", operador)
+    pdf.add_section("Explicación técnica", explicacion)
+    pdf.add_section("Resultados", resultados)
+    pdf.add_section("Observaciones", observaciones or "Sin observaciones.")
+    output = pdf.output(dest='S').encode('latin-1', errors='ignore')
+    st.download_button("⬇️ Descargar informe PDF", data=BytesIO(output), file_name=nombre, mime="application/pdf")
 
-    ruta = os.path.join(f"informes/{carpeta}", nombre_archivo)
-    pdf.output(ruta, 'F')
-
-    pdf_bytes = pdf.output(dest="S").encode("latin1", errors="ignore")
-    buffer = BytesIO(pdf_bytes)
-
-    st.download_button(
-        label="⬇️ Descargar informe PDF",
-        data=buffer,
-        file_name=nombre_archivo,
-        mime="application/pdf"
-    )
-
-# Cambio de análisis
-if "analisis_actual" not in st.session_state:
-    st.session_state.analisis_actual = "-- Seleccionar --"
-
-analisis_nuevo = st.selectbox("🔍 Seleccioná el tipo de análisis:", [
+# PÁGINA PRINCIPAL: SELECCIÓN DE ANÁLISIS
+st.markdown("---")
+analisis = st.selectbox("🔬 Seleccioná el tipo de análisis:", [
     "-- Seleccionar --",
+    "Gas Natural",
     "Gasolina Estabilizada",
     "MEG",
     "TEG",
     "Agua Desmineralizada",
-    "Gas Natural"
-], key="tipo_analisis")
+    "Aminas"
+])
 
-if analisis_nuevo != st.session_state.analisis_actual:
-    st.session_state.analisis_actual = analisis_nuevo
-    for key in list(st.session_state.keys()):
-        if key.startswith("operador_") or key.startswith("obs_"):
-            del st.session_state[key]
-    st.rerun()
+# MÓDULO: GAS NATURAL
+if analisis == "Gas Natural":
+    st.subheader("🔥 Análisis de Gas Natural")
+    st.markdown("Se evalúan componentes críticos del gas natural para verificar cumplimiento con especificaciones de salida de PTG/TPFs.")
 
-# GASOLINA
-if analisis_nuevo == "Gasolina Estabilizada":
-    st.subheader("⛽ Análisis de Gasolina Estabilizada")
-    tvr = st.number_input("TVR (psi a 38,7 °C)", min_value=0.0, step=0.01)
-    sales = st.number_input("Sales (g/m²)", min_value=0.0, step=0.01)
-    densidad = st.number_input("Densidad (kg/m³)", min_value=0.0, step=0.01)
-    operador = st.text_input("👤 Operador", key="operador_gasolina")
-    obs = st.text_area("Observaciones", key="obs_gasolina")
+    st.latex("H_2S_{max} = 2.1\\ ppm \\quad\\quad CO_2_{max} = 2\\ \\%")
+    st.markdown("**Importancia:** Altos niveles de H₂S o CO₂ provocan corrosión, toxicidad y problemas regulatorios.")
+    
+    h2s = st.number_input("H₂S (ppm)", 0.0, step=0.1)
+    co2 = st.number_input("CO₂ (%)", 0.0, step=0.1)
+    operador = st.text_input("👤 Operador")
+    obs = st.text_area("📝 Observaciones")
 
-    if st.button("📊 Analizar"):
-        cumple = "Cumple ✅" if tvr < 12 else "No cumple ❌"
+    if st.button("📊 Analizar Gas Natural"):
+        cumple_h2s = "✅ Cumple" if h2s <= 2.1 else "❌ Fuera de especificación"
+        cumple_co2 = "✅ Cumple" if co2 <= 2 else "❌ Fuera de especificación"
         resultados = {
-            "TVR (psi)": f"{tvr} → {cumple}",
-            "Sales (g/m²)": sales,
-            "Densidad (kg/m³)": densidad
+            "H₂S (ppm)": f"{h2s} - {cumple_h2s}",
+            "CO₂ (%)": f"{co2} - {cumple_co2}"
         }
         st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
-
-        generar_pdf(
-            nombre_archivo=f"Informe_Gasolina_{operador.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-            operador=operador,
-            explicacion="Evaluación de gasolina estabilizada: TVR, contenido de sales y densidad.",
-            resultados=resultados,
-            obs=obs,
-            carpeta="gasolina"
+        exportar_pdf(
+            f"Informe_GasNatural_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            operador,
+            "Evaluación de H₂S y CO₂ en gas natural tratado. Valores fuera de rango implican riesgo operativo y corrosión.",
+            resultados,
+            obs
         )
-
-# MEG
-elif analisis_nuevo == "MEG":
-    st.subheader("🧪 Análisis de MEG")
-    ph = st.number_input("pH", 0.0, 14.0, step=0.01)
-    conc = st.number_input("Concentración (%)", 0.0, 100.0, step=0.1)
-    dens = st.number_input("Densidad (kg/m³)", 0.0, step=0.1)
-    cl = st.number_input("Cloruros (mg/L)", 0.0, step=0.1)
-    mdea = st.number_input("MDEA (ppm)", 0.0, step=0.1)
-    operador = st.text_input("👤 Operador", key="operador_meg")
-    obs = st.text_area("Observaciones", key="obs_meg")
-
-    if st.button("📊 Analizar MEG"):
-        resultados = {
-            "pH": ph,
-            "Concentración (%)": conc,
-            "Densidad (kg/m³)": dens,
-            "Cloruros (mg/L)": cl,
-            "MDEA (ppm)": mdea
-        }
-        st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
-        generar_pdf(
-            nombre_archivo=f"Informe_MEG_{operador.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-            operador=operador,
-            explicacion="Análisis de monoetilenglicol (MEG) utilizado como inhibidor de hidratos.",
-            resultados=resultados,
-            obs=obs,
-            carpeta="meg"
-        )
-
-# TEG
-elif analisis_nuevo == "TEG":
-    st.subheader("🧪 Análisis de TEG")
-    ph = st.number_input("pH", 0.0, 14.0, step=0.01)
-    conc = st.number_input("Concentración (%)", 0.0, 100.0, step=0.1)
-    dens = st.number_input("Densidad (kg/m³)", 0.0, step=0.1)
-    cl = st.number_input("Cloruros (mg/L)", 0.0, step=0.1)
-    hierro = st.number_input("Hierro (ppm)", 0.0, step=0.1)
-    operador = st.text_input("👤 Operador", key="operador_teg")
-    obs = st.text_area("Observaciones", key="obs_teg")
-
-    if st.button("📊 Analizar TEG"):
-        resultados = {
-            "pH": ph,
-            "Concentración (%)": conc,
-            "Densidad (kg/m³)": dens,
-            "Cloruros (mg/L)": cl,
-            "Hierro (ppm)": hierro
-        }
-        st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
-        generar_pdf(
-            nombre_archivo=f"Informe_TEG_{operador.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-            operador=operador,
-            explicacion="Análisis de trietilenglicol (TEG) utilizado para deshidratación de gas natural.",
-            resultados=resultados,
-            obs=obs,
-            carpeta="teg"
-        )
-
-# AGUA DEMI
-elif analisis_nuevo == "Agua Desmineralizada":
-    st.subheader("💧 Análisis de Agua Desmineralizada")
-    ph = st.number_input("pH", 0.0, 14.0, step=0.01)
-    cl = st.number_input("Cloruros (mg/L)", 0.0, step=0.1)
-    operador = st.text_input("👤 Operador", key="operador_agua")
-    obs = st.text_area("Observaciones", key="obs_agua")
-
-    if st.button("📊 Analizar Agua"):
-        resultados = {
-            "pH": ph,
-            "Cloruros (mg/L)": cl
-        }
-        st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
-        generar_pdf(
-            nombre_archivo=f"Informe_AguaDemi_{operador.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-            operador=operador,
-            explicacion="Análisis de agua desmineralizada para uso en calderas o procesos sensibles.",
-            resultados=resultados,
-            obs=obs,
-            carpeta="agua_demi"
-        )
-
-# GAS NATURAL
-elif analisis_nuevo == "Gas Natural":
-    st.subheader("🔥 Análisis de Gas Natural - Cromatografía")
-    archivo = st.file_uploader("📁 Cargar archivo CSV de cromatografía", type=["csv"])
-    operador = st.text_input("👤 Operador", key="operador_gas")
-    obs = st.text_area("Observaciones", key="obs_gas")
-
-    if archivo is not None:
-        df = pd.read_csv(archivo)
-        st.dataframe(df)
-
-        resultado_ficticio = {
-            "Metano (%)": df["Metano"].sum() if "Metano" in df.columns else "No disponible",
-            "Etano (%)": df["Etano"].sum() if "Etano" in df.columns else "No disponible",
-            "Poder calorífico (kcal/m³)": 9500,
-            "Gravedad específica": 0.65
-        }
-        st.dataframe(pd.DataFrame(resultado_ficticio.items(), columns=["Parámetro", "Valor"]))
-
-        if st.button("📄 Descargar informe PDF"):
-            generar_pdf(
-                nombre_archivo=f"Informe_Gas_{operador.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-                operador=operador,
-                explicacion="Análisis de composición de gas natural a partir de cromatografía. Incluye poder calorífico e índice de gravedad.",
-                resultados=resultado_ficticio,
-                obs=obs,
-                carpeta="gas_natural"
-            )
-
-# MANUAL
-st.markdown("---")
-st.subheader("📘 Manual de Usuario")
-
-if st.button("📄 Generar Manual de Usuario"):
-    pdf = PDF()
-    pdf.add_page()
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "MANUAL DE USUARIO - LTS LAB ANALYZER", 0, 1, 'C')
-    pdf.ln(10)
-    pdf.set_font("Arial", '', 10)
-    texto = (
-        "Este sistema permite registrar, validar y documentar análisis de laboratorio\n"
-        "para plantas LTS con estándares de la industria petrolera.\n\n"
-        "📋 Cómo usar la app:\n"
-        "- Seleccione el tipo de análisis.\n"
-        "- Ingrese los datos requeridos o cargue el CSV.\n"
-        "- Valide los parámetros.\n"
-        "- Descargue el informe profesional en PDF con logo.\n\n"
-        "🧪 Módulos incluidos:\n"
-        "- Gas Natural (CSV cromatografía)\n"
-        "- Gasolina Estabilizada\n"
-        "- MEG / TEG\n"
-        "- Agua Desmineralizada\n\n"
-        "📄 Cada informe incluye: operador, validación, observaciones y diseño profesional."
-    )
-    pdf.multi_cell(0, 8, limpiar_texto(texto))
-
-    buffer = BytesIO(pdf.output(dest='S').encode('latin1', errors="ignore"))
-    st.download_button(
-        label="⬇️ Descargar Manual de Usuario (PDF)",
-        data=buffer,
-        file_name="Manual_LTS_Lab_Analyzer.pdf",
-        mime="application/pdf"
-    )
-
 
