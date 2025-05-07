@@ -103,7 +103,7 @@ if analisis_nuevo != st.session_state.analisis_actual:
     for key in list(st.session_state.keys()):
         if key.startswith("operador_") or key.startswith("obs_"):
             del st.session_state[key]
-   st.rerun() 
+    st.rerun()
 
 # MÓDULO: Gasolina Estabilizada
 if analisis_nuevo == "Gasolina Estabilizada":
