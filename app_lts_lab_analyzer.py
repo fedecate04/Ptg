@@ -16,7 +16,7 @@ modulos = ["gas_natural", "gasolina", "meg", "teg", "agua_demi"]
 for m in modulos:
     os.makedirs(f"informes/{m}", exist_ok=True)
 
-LOGO_PATH = "LOGO PETROGAS.png"  # Asegurate de que el PNG esté en RGB (sin transparencia)
+LOGO_PATH = "LOGO PETROGAS.png"
 
 # Función para limpiar caracteres no compatibles con latin1
 def limpiar_texto(texto):
@@ -51,16 +51,14 @@ class PDF(FPDF):
     def add_results(self, resultados):
         self.set_font('Arial', '', 10)
         for k, v in resultados.items():
-            k_clean = limpiar_texto(str(k))
-            v_clean = limpiar_texto(str(v))
-            self.cell(0, 8, f"{k_clean}: {v_clean}", 0, 1)
+            self.cell(0, 8, f"{limpiar_texto(k)}: {limpiar_texto(str(v))}", 0, 1)
         self.ln(4)
 
     def add_observaciones(self, texto="Sin observaciones."):
         self.set_font('Arial', '', 10)
         self.multi_cell(0, 8, f"Observaciones: {limpiar_texto(texto)}")
         self.ln(3)
-# Función para generar y guardar PDF
+
 def generar_pdf(nombre_archivo, operador, explicacion, resultados, obs, carpeta):
     pdf = PDF()
     pdf.add_page()
@@ -69,11 +67,9 @@ def generar_pdf(nombre_archivo, operador, explicacion, resultados, obs, carpeta)
     pdf.add_results(resultados)
     pdf.add_observaciones(obs)
 
-    # Guardar automáticamente en carpeta del módulo
     ruta = os.path.join(f"informes/{carpeta}", nombre_archivo)
     pdf.output(ruta, 'F')
 
-    # Preparar para descarga
     pdf_bytes = pdf.output(dest="S").encode("latin1", errors="ignore")
     buffer = BytesIO(pdf_bytes)
 
@@ -84,20 +80,19 @@ def generar_pdf(nombre_archivo, operador, explicacion, resultados, obs, carpeta)
         mime="application/pdf"
     )
 
-# Manejo del cambio de análisis
+# Cambio de análisis
 if "analisis_actual" not in st.session_state:
     st.session_state.analisis_actual = "-- Seleccionar --"
 
 analisis_nuevo = st.selectbox("🔍 Seleccioná el tipo de análisis:", [
     "-- Seleccionar --",
-    "Gas Natural",
     "Gasolina Estabilizada",
     "MEG",
     "TEG",
-    "Agua Desmineralizada"
+    "Agua Desmineralizada",
+    "Gas Natural"
 ], key="tipo_analisis")
 
-# Reset automático al cambiar
 if analisis_nuevo != st.session_state.analisis_actual:
     st.session_state.analisis_actual = analisis_nuevo
     for key in list(st.session_state.keys()):
@@ -105,7 +100,7 @@ if analisis_nuevo != st.session_state.analisis_actual:
             del st.session_state[key]
     st.rerun()
 
-# MÓDULO: Gasolina Estabilizada
+# GASOLINA
 if analisis_nuevo == "Gasolina Estabilizada":
     st.subheader("⛽ Análisis de Gasolina Estabilizada")
     tvr = st.number_input("TVR (psi a 38,7 °C)", min_value=0.0, step=0.01)
@@ -124,7 +119,7 @@ if analisis_nuevo == "Gasolina Estabilizada":
         st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
 
         generar_pdf(
-            nombre_archivo=f"Informe_Gasolina_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            nombre_archivo=f"Informe_Gasolina_{operador.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
             operador=operador,
             explicacion="Evaluación de gasolina estabilizada: TVR, contenido de sales y densidad.",
             resultados=resultados,
@@ -132,7 +127,7 @@ if analisis_nuevo == "Gasolina Estabilizada":
             carpeta="gasolina"
         )
 
-# MÓDULO: MEG
+# MEG
 elif analisis_nuevo == "MEG":
     st.subheader("🧪 Análisis de MEG")
     ph = st.number_input("pH", 0.0, 14.0, step=0.01)
@@ -152,16 +147,16 @@ elif analisis_nuevo == "MEG":
             "MDEA (ppm)": mdea
         }
         st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
-
         generar_pdf(
-            nombre_archivo=f"Informe_MEG_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            nombre_archivo=f"Informe_MEG_{operador.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
             operador=operador,
-            explicacion="Análisis de monoetilenglicol (MEG) utilizado como inhibidor de hidratos en plantas de gas.",
+            explicacion="Análisis de monoetilenglicol (MEG) utilizado como inhibidor de hidratos.",
             resultados=resultados,
             obs=obs,
             carpeta="meg"
         )
-# MÓDULO: TEG
+
+# TEG
 elif analisis_nuevo == "TEG":
     st.subheader("🧪 Análisis de TEG")
     ph = st.number_input("pH", 0.0, 14.0, step=0.01)
@@ -181,9 +176,8 @@ elif analisis_nuevo == "TEG":
             "Hierro (ppm)": hierro
         }
         st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
-
         generar_pdf(
-            nombre_archivo=f"Informe_TEG_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            nombre_archivo=f"Informe_TEG_{operador.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
             operador=operador,
             explicacion="Análisis de trietilenglicol (TEG) utilizado para deshidratación de gas natural.",
             resultados=resultados,
@@ -191,7 +185,7 @@ elif analisis_nuevo == "TEG":
             carpeta="teg"
         )
 
-# MÓDULO: Agua Desmineralizada
+# AGUA DEMI
 elif analisis_nuevo == "Agua Desmineralizada":
     st.subheader("💧 Análisis de Agua Desmineralizada")
     ph = st.number_input("pH", 0.0, 14.0, step=0.01)
@@ -205,17 +199,16 @@ elif analisis_nuevo == "Agua Desmineralizada":
             "Cloruros (mg/L)": cl
         }
         st.dataframe(pd.DataFrame(resultados.items(), columns=["Parámetro", "Valor"]))
-
         generar_pdf(
-            nombre_archivo=f"Informe_AguaDemi_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            nombre_archivo=f"Informe_AguaDemi_{operador.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
             operador=operador,
-            explicacion="Análisis de agua desmineralizada para uso industrial, calderas o procesos sensibles.",
+            explicacion="Análisis de agua desmineralizada para uso en calderas o procesos sensibles.",
             resultados=resultados,
             obs=obs,
             carpeta="agua_demi"
         )
 
-# MÓDULO: Gas Natural (desde CSV)
+# GAS NATURAL
 elif analisis_nuevo == "Gas Natural":
     st.subheader("🔥 Análisis de Gas Natural - Cromatografía")
     archivo = st.file_uploader("📁 Cargar archivo CSV de cromatografía", type=["csv"])
@@ -232,20 +225,19 @@ elif analisis_nuevo == "Gas Natural":
             "Poder calorífico (kcal/m³)": 9500,
             "Gravedad específica": 0.65
         }
-
         st.dataframe(pd.DataFrame(resultado_ficticio.items(), columns=["Parámetro", "Valor"]))
 
         if st.button("📄 Descargar informe PDF"):
             generar_pdf(
-                nombre_archivo=f"Informe_Gas_{operador}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                nombre_archivo=f"Informe_Gas_{operador.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
                 operador=operador,
-                explicacion="Análisis de composición de gas natural a partir de cromatografía. Incluye poder calorífico y gravedad específica.",
+                explicacion="Análisis de composición de gas natural a partir de cromatografía. Incluye poder calorífico e índice de gravedad.",
                 resultados=resultado_ficticio,
                 obs=obs,
                 carpeta="gas_natural"
             )
 
-# MANUAL DE USUARIO
+# MANUAL
 st.markdown("---")
 st.subheader("📘 Manual de Usuario")
 
@@ -256,7 +248,6 @@ if st.button("📄 Generar Manual de Usuario"):
     pdf.cell(0, 10, "MANUAL DE USUARIO - LTS LAB ANALYZER", 0, 1, 'C')
     pdf.ln(10)
     pdf.set_font("Arial", '', 10)
-
     texto = (
         "Este sistema permite registrar, validar y documentar análisis de laboratorio\n"
         "para plantas LTS con estándares de la industria petrolera.\n\n"
@@ -272,12 +263,9 @@ if st.button("📄 Generar Manual de Usuario"):
         "- Agua Desmineralizada\n\n"
         "📄 Cada informe incluye: operador, validación, observaciones y diseño profesional."
     )
-
     pdf.multi_cell(0, 8, limpiar_texto(texto))
 
-    pdf_bytes = pdf.output(dest='S').encode('latin1', errors="ignore")
-    buffer = BytesIO(pdf_bytes)
-
+    buffer = BytesIO(pdf.output(dest='S').encode('latin1', errors="ignore"))
     st.download_button(
         label="⬇️ Descargar Manual de Usuario (PDF)",
         data=buffer,
